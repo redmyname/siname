@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-brush: var(--font-brush), cursive;
+  --color-ink: #1a1a1a;
+  --color-paper: #faf7f2;
+  --color-accent: #c41e3a;
+  --color-gold: #b8860b;
+}
+
+body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Chinese name display font */
+.font-brush {
+  font-family: var(--font-brush), cursive;
+}
+
+/* Card style */
+.name-card {
+  background: linear-gradient(135deg, #fdf6ee 0%, #f7efe0 50%, #faf3e6 100%);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Loading animation */
+@keyframes ink-spread {
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: circle(100% at 50% 50%);
+    opacity: 1;
+  }
+}
+
+.ink-reveal {
+  animation: ink-spread 1.5s ease-out forwards;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.char-float {
+  animation: float 2s ease-in-out infinite;
+}
