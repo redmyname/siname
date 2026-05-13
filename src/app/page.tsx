@@ -52,6 +52,7 @@ export default function Home() {
   const [results, setResults] = useState<GenerateResponse | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const skipCache = useRef(false);
+  const [showHero, setShowHero] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const updateForm = (updates: Partial<FormData>) => {
@@ -127,14 +128,22 @@ export default function Home() {
 
   const handleRegenerate = () => {
     skipCache.current = true;
+    setShowHero(false);
     handleSubmit();
+    setTimeout(() => {
+      document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
   };
 
   const handleReset = () => {
     setStep("form");
+    setShowHero(false);
     setResults(null);
     setSelectedIndex(null);
     setError(null);
+    setTimeout(() => {
+      document.getElementById("generate")?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
   };
 
   const handleCloseCard = () => {
@@ -143,7 +152,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {step !== "results" && step !== "card" && <HeroSection />}
+      {showHero && step !== "results" && step !== "card" && <HeroSection />}
 
       {/* Form */}
       {(step === "form" || step === "loading") && (
