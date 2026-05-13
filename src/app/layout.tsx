@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Ma_Shan_Zheng } from "next/font/google";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -130,6 +131,9 @@ export default function RootLayout({
             </Script>
           </>
         )}
+
+        {/* Vercel Speed Insights */}
+        <SpeedInsights />
       </body>
     </html>
   );
