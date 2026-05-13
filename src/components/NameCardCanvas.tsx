@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import html2canvas from "html2canvas";
+import { renderCardToCanvas } from "@/lib/renderCardToCanvas";
+import type { CardStyle } from "@/lib/renderCardToCanvas";
 import type { CandidateName } from "@/types";
 
 interface Props {
@@ -9,8 +10,6 @@ interface Props {
   originalName: string;
   onClose: () => void;
 }
-
-type CardStyle = "ink" | "elegant" | "dark";
 
 const STYLES = {
   ink: {
@@ -48,8 +47,28 @@ const STYLES = {
   },
 };
 
+function showToast(message: string) {
+  const existing = document.getElementById("card-toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "card-toast";
+  toast.textContent = message;
+  toast.style.cssText =
+    "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);" +
+    "background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:10px;" +
+    "font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);" +
+    "transition:opacity 0.3s;";
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 export default function NameCardCanvas({ candidate, originalName, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cardStyle, setCardStyle] = useState<CardStyle>("ink");
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -57,51 +76,64 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
   const chars = [...candidate.chineseName];
   const charSize = chars.length <= 3 ? 72 : 56;
 
+  const renderToBlob = useCallback(async (): Promise<Blob> => {
+    const canvas = document.createElement("canvas");
+    await renderCardToCanvas(canvas, candidate, originalName, cardStyle);
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error("Canvas toBlob returned null"));
+      }, "image/png");
+    });
+  }, [candidate, originalName, cardStyle]);
+
   const handleDownload = useCallback(async () => {
-    if (!cardRef.current) return;
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
+      const blob = await renderToBlob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = `chinese-name-${candidate.chineseName}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = url;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Failed to generate card:", err);
+      showToast("Failed to generate image. Please try again.");
+      console.error("Download failed:", err);
     }
     setIsDownloading(false);
-  }, [candidate]);
+  }, [renderToBlob, candidate]);
 
   const handleShare = useCallback(async () => {
-    if (!cardRef.current) return;
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/png")
-      );
+      const blob = await renderToBlob();
       if (navigator.share) {
         await navigator.share({
           title: `My Chinese Name: ${candidate.chineseName}`,
           text: `I got my Chinese name on Siname — discover yours too!`,
-          files: [new File([blob], `chinese-name-${candidate.chineseName}.png`, { type: "image/png" })],
+          files: [
+            new File([blob], `chinese-name-${candidate.chineseName}.png`, {
+              type: "image/png",
+            }),
+          ],
         });
       } else {
-        handleDownload();
+        // Fallback: download
+        await handleDownload();
       }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        handleDownload();
+        // Share failed, try download
+        try {
+          await handleDownload();
+        } catch {
+          showToast("Failed to share. Please try downloading instead.");
+        }
       }
     }
-  }, [candidate, handleDownload]);
+  }, [renderToBlob, handleDownload, candidate]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -109,7 +141,10 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
           <h3 className="font-semibold text-stone-800">Your Name Card</h3>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition">
+          <button
+            onClick={onClose}
+            className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -137,7 +172,7 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
           ))}
         </div>
 
-        {/* Card preview */}
+        {/* Card preview (DOM, for display only — export uses canvas) */}
         <div className="p-6 flex justify-center">
           <div
             ref={cardRef}
@@ -170,7 +205,7 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
               </svg>
             ))}
 
-            {/* ── TOP: seal + original name ── */}
+            {/* TOP: seal + original name */}
             <div style={{ padding: "36px 36px 0", position: "relative", zIndex: 1 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
                 <div
@@ -195,7 +230,7 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
               </div>
             </div>
 
-            {/* ── CENTER: the name ── */}
+            {/* CENTER: the name */}
             <div style={{ textAlign: "center", position: "relative", zIndex: 1, padding: "0 36px" }}>
               <div style={{ display: "flex", justifyContent: "center", gap: chars.length <= 3 ? 12 : 8 }}>
                 {chars.map((char, i) => (
@@ -217,7 +252,7 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
               </p>
             </div>
 
-            {/* ── BOTTOM: character breakdown ── */}
+            {/* BOTTOM: character breakdown */}
             <div style={{ padding: "0 36px 20px", position: "relative", zIndex: 1 }}>
               <div style={{ borderTop: `1px solid ${s.dividerColor}`, paddingTop: 16 }}>
                 {/* Surname */}
@@ -255,7 +290,7 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
               </div>
             </div>
 
-            {/* ── Footer ── */}
+            {/* Footer */}
             <div style={{ textAlign: "center", padding: "0 36px 28px", position: "relative", zIndex: 1 }}>
               <p style={{ color: s.subColor, fontSize: 9, margin: 0, opacity: 0.3 }}>
                 mychinesename.net
@@ -263,6 +298,9 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
             </div>
           </div>
         </div>
+
+        {/* Hidden canvas for export */}
+        <canvas ref={canvasRef} style={{ display: "none" }} />
 
         {/* Action buttons */}
         <div className="flex gap-3 px-5 pb-5">
