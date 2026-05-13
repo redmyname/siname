@@ -57,14 +57,14 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
   const chars = [...candidate.chineseName];
   const charSize = chars.length <= 3 ? 72 : 56;
 
-  const downloadCard = useCallback(async () => {
+  const handleDownload = useCallback(async () => {
     if (!cardRef.current) return;
     setIsDownloading(true);
     try {
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
-        backgroundColor: null,
-        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
       });
       const link = document.createElement("a");
       link.download = `chinese-name-${candidate.chineseName}.png`;
@@ -76,13 +76,13 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
     setIsDownloading(false);
   }, [candidate]);
 
-  const shareCard = useCallback(async () => {
+  const handleShare = useCallback(async () => {
     if (!cardRef.current) return;
     try {
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
-        backgroundColor: null,
-        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
       });
       const blob = await new Promise<Blob>((resolve) =>
         canvas.toBlob((b) => resolve(b!), "image/png")
@@ -94,14 +94,14 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
           files: [new File([blob], `chinese-name-${candidate.chineseName}.png`, { type: "image/png" })],
         });
       } else {
-        downloadCard();
+        handleDownload();
       }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        downloadCard();
+        handleDownload();
       }
     }
-  }, [candidate, downloadCard]);
+  }, [candidate, handleDownload]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -119,9 +119,9 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
         {/* Style selector */}
         <div className="flex gap-2 px-5 py-3 border-b border-stone-50">
           {([
-            { key: "ink" as const, cn: "水墨", en: "Ink" },
-            { key: "elegant" as const, cn: "清雅", en: "Elegant" },
-            { key: "dark" as const, cn: "玄夜", en: "Dark" },
+            { key: "ink" as const, en: "Ink Wash" },
+            { key: "elegant" as const, en: "Elegant" },
+            { key: "dark" as const, en: "Dark" },
           ]).map((style) => (
             <button
               key={style.key}
@@ -132,7 +132,7 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
                   : "bg-stone-50 text-stone-500 hover:bg-stone-100"
               }`}
             >
-              {style.cn} <span className="text-xs opacity-50 ml-0.5">{style.en}</span>
+              {style.en}
             </button>
           ))}
         </div>
@@ -267,14 +267,14 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
         {/* Action buttons */}
         <div className="flex gap-3 px-5 pb-5">
           <button
-            onClick={downloadCard}
+            onClick={handleDownload}
             disabled={isDownloading}
             className="flex-1 py-3 rounded-xl bg-stone-800 text-white font-medium text-sm hover:bg-stone-900 transition disabled:opacity-50"
           >
             {isDownloading ? "Rendering..." : "Download PNG"}
           </button>
           <button
-            onClick={shareCard}
+            onClick={handleShare}
             className="flex-1 py-3 rounded-xl bg-accent text-white font-medium text-sm hover:bg-red-700 transition"
           >
             Share
