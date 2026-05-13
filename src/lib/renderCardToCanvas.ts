@@ -280,13 +280,17 @@ export async function renderCardToCanvas(
   wrapText(ctx, `"${candidate.overallMeaning}"`, PAD, y + 4, W - PAD * 2, 16);
   ctx.globalAlpha = 1;
 
-  // 7. FOOTER
+  // 7. FOOTER with CTA
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  ctx.font = `9px system-ui, sans-serif`;
+  const footerY = H - 28;
+  ctx.font = `8px system-ui, sans-serif`;
   ctx.fillStyle = s.subColor;
-  ctx.globalAlpha = 0.3;
-  ctx.fillText("mychinesename.net", W / 2, H - 28);
+  ctx.globalAlpha = 0.25;
+  ctx.fillText("Give me a Chinese name too", W / 2, footerY);
+  ctx.globalAlpha = 0.4;
+  ctx.font = `10px system-ui, sans-serif`;
+  ctx.fillText("mychinesename.net", W / 2, footerY + 13);
   ctx.globalAlpha = 1;
 }
 

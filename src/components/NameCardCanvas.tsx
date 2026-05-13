@@ -290,9 +290,12 @@ export default function NameCardCanvas({ candidate, originalName, onClose }: Pro
               </div>
             </div>
 
-            {/* Footer */}
+            {/* Footer with CTA */}
             <div style={{ textAlign: "center", padding: "0 36px 28px", position: "relative", zIndex: 1 }}>
-              <p style={{ color: s.subColor, fontSize: 9, margin: 0, opacity: 0.3 }}>
+              <p style={{ color: s.subColor, fontSize: 8, margin: 0, opacity: 0.25 }}>
+                Give me a Chinese name too
+              </p>
+              <p style={{ color: s.subColor, fontSize: 10, margin: "2px 0 0", opacity: 0.4 }}>
                 mychinesename.net
               </p>
             </div>
