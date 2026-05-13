@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Parse and validate input
-  let body: unknown;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  // Check for cache bypass (used by regenerate)
+  const skipCache = body._skipCache === true;
 
   const validation = validateRequest(body);
   if (!validation.valid || !validation.data) {
@@ -54,18 +57,19 @@ export async function POST(request: NextRequest) {
 
   const req = validation.data;
 
-  // 4. Check cache
+  // 4. Check cache (skip if regenerate)
   const cacheKey = hashRequest(req);
-  const cached = getCached(cacheKey);
-  if (cached) {
-    return NextResponse.json(cached, {
-      headers: {
-        "X-Cache": "HIT",
-        "X-RateLimit-Remaining": String(rateCheck.remainingMinute),
-      },
-    });
+  if (!skipCache) {
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          "X-Cache": "HIT",
+          "X-RateLimit-Remaining": String(rateCheck.remainingMinute),
+        },
+      });
+    }
   }
-
   // 5. Build prompts and call DeepSeek
   try {
     const systemPrompt = buildSystemPrompt();

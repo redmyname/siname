@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import HeroSection from "@/components/HeroSection";
 import NameInputForm from "@/components/NameInputForm";
 import CandidateCard from "@/components/CandidateCard";
@@ -51,6 +51,7 @@ export default function Home() {
   const [form, setForm] = useState<FormData>(defaultForm);
   const [results, setResults] = useState<GenerateResponse | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const skipCache = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const updateForm = (updates: Partial<FormData>) => {
@@ -67,6 +68,7 @@ export default function Home() {
         originalName: form.originalName.trim(),
         gender: form.gender,
         language: form.language,
+        _skipCache: skipCache.current,
       };
 
       if (form.country) payload.country = form.country;
@@ -106,6 +108,7 @@ export default function Home() {
       const data: GenerateResponse = await res.json();
       setResults(data);
       setStep("results");
+      skipCache.current = false;
 
       // Scroll to results
       setTimeout(() => {
@@ -120,6 +123,11 @@ export default function Home() {
   const handleSelect = (candidate: CandidateName, index: number) => {
     setSelectedIndex(index);
     setStep("card");
+  };
+
+  const handleRegenerate = () => {
+    skipCache.current = true;
+    handleSubmit();
   };
 
   const handleReset = () => {
@@ -172,12 +180,35 @@ export default function Home() {
       {/* Results */}
       {step === "results" && results && (
         <section id="results" className="max-w-6xl mx-auto px-4 py-12">
-          <div className="text-center mb-10">
+          <div className="text-center mb-6">
             <p className="text-sm text-stone-400 mb-2">Results for</p>
             <h2 className="text-2xl font-bold text-stone-900">{form.originalName}</h2>
             <p className="text-stone-500 text-sm mt-2">
               Here are three authentic Chinese names crafted for you. Each has a unique story.
             </p>
+          </div>
+
+          {/* Top action bar — always visible */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <button
+              onClick={handleRegenerate}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-800 text-white font-medium text-sm rounded-full hover:bg-stone-900 transition shadow-md"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Regenerate
+            </button>
+            <button
+              onClick={handleReset}
+              className="inline-flex items-center gap-2 px-5 py-2.5 border border-stone-300 text-stone-700 font-medium text-sm rounded-full hover:bg-stone-50 transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Change settings
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -194,9 +225,9 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Action area */}
-          <div className="text-center space-y-4">
-            {selectedIndex !== null && (
+          {/* Generate share card — shown after selection */}
+          {selectedIndex !== null && (
+            <div className="text-center">
               <button
                 onClick={() =>
                   handleSelect(results.candidates[selectedIndex], selectedIndex)
@@ -205,25 +236,8 @@ export default function Home() {
               >
                 ✨ Generate Share Card
               </button>
-            )}
-            <div className="flex items-center justify-center gap-6">
-              <button
-                onClick={handleSubmit}
-                className="inline-flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium text-sm transition"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Regenerate — I want different options
-              </button>
-              <button
-                onClick={handleReset}
-                className="text-stone-400 hover:text-stone-600 text-sm underline underline-offset-4 transition"
-              >
-                ← Change settings
-              </button>
             </div>
-          </div>
+          )}
         </section>
       )}
 
