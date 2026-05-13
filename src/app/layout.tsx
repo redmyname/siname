@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Ma_Shan_Zheng } from "next/font/google";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -110,6 +111,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <Analytics />
 
         {/* Google Analytics 4 — enabled when NEXT_PUBLIC_GA_ID is set */}
         {process.env.NEXT_PUBLIC_GA_ID && (
